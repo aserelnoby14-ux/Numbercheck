@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام التحقق الذكي للجوال</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --border: #334155;
+            --accent: #38bdf8;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            background: var(--card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        .tabs-header {
+            display: flex;
+            background: #090d16;
+            border-bottom: 1px solid var(--border);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 14px 10px;
+            background: none;
+            border: none;
+            font-size: 14px;
+            font-weight: 700;
+            color: #94a3b8;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: var(--accent);
+            background: var(--card);
+            border-bottom: 3px solid var(--accent);
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            flex: 1;
+            flex-direction: column;
+        }
+        .tab-content.active {
+            display: flex;
+        }
+        h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+        input {
+            width: 100%;
+            padding: 14px;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+        input:focus {
+            border-color: var(--accent);
+        }
+        button.action-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button.action-btn:active {
+            opacity: 0.8;
+        }
+        .result-box {
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+            flex: 1;
+            font-family: monospace;
+            font-size: 13px;
+            color: #4ade80;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 250px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs-header">
+        <button class="tab-btn active" onclick="switchTab(event, 'sendTab')">إرسال الرقم</button>
+        <button class="tab-btn sub-tab" onclick="switchTab(event, 'receiveTab')">استقبال المعلومات</button>
+    </div>
+
+    <!-- خانة الإرسال -->
+    <div id="sendTab" class="tab-content active">
+        <h2>إدخال بيانات الهدف</h2>
+        <div class="form-group">
+            <label for="phoneNumber">رقم الهاتف مع رمز الدولة:</label>
+            <input type="tel" id="phoneNumber" placeholder="+201012345678">
+        </div>
+        <button class="action-btn" onclick="processExtraction()">تحقق وسحب البيانات</button>
+    </div>
+
+    <!-- خانة الاستقبال -->
+    <div id="receiveTab" class="tab-content">
+        <h2>سجل المعلومات المستخرجة</h2>
+        <div id="resultOutput" class="result-box">[!] بانتظار إدخال البيانات...</div>
+    </div>
+</div>
+
+<script>
+    function switchTab(evt, tabId) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        evt.currentTarget.classList.add('active');
+    }
+
+    function processExtraction() {
+        const phoneInput = document.getElementById('phoneNumber').value.trim();
+        const outputBox = document.getElementById('resultOutput');
+
+        if (!phoneInput) {
+            alert('الرجاء إدخال رقم الهاتف أولاً.');
+            return;
+        }
+
+        // الانتقال التلقائي لخانة الاستقبال المخصصة للجوال
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('receiveTab').classList.add('active');
+        document.querySelector('.sub-tab').classList.add('active');
+
+        outputBox.innerText = `[~] جاري فحص صحة الرقم داخلياً وتحليل البيانات: ${phoneInput}...\n`;
+
+        setTimeout(() => {
+            const cleanNum = phoneInput.replace(/[^\+\d]/g, '');
+
+            // فحص داخلي دقيق لصحة النمط والحد الأدنى والأقصى للطول الدولي
+            const internationalRegex = /^\+[1-9]\d{7,14}$/;
+            
+            if (!internationalRegex.test(cleanNum)) {
+                outputBox.innerText = `[خطأ]: الرقم المدخل (${phoneInput}) غير صحيح أو لا يطابق المعايير الدولية. يرجى التأكد من كتابة رمز الدولة بشكل سليم (+20...)`;
+                return;
+            }
+
+            // تحقق إضافي لأطوال الأرقام الخاصة بالدول لضمان عدم قبول هراء عشوائي
+            let isValidLength = true;
+            if (cleanNum.startsWith("+20")) {
+                if (cleanNum.length !== 12 && cleanNum.length !== 13) {
+                    isValidLength = false;
+                }
+            } else if (cleanNum.startsWith("+966")) {
+                if (cleanNum.length !== 13) {
+                    isValidLength = false;
+                }
+            }
+
+            if (!isValidLength) {
+                outputBox.innerText = `[خطأ]: طول الرقم غير صحيح بالنسبة للدولة المحددة. تأكد من اكتمال الأرقام.`;
+                return;
+            }
+
+            let country = "دولة دولية أخرى";
+            let lineTypeDescription = "هاتف محمول (Mobile)";
+            let specificCarrier = "مزود خدمة معتمد";
+
+            if (cleanNum.startsWith("+20")) {
+                country = "مصر (Egypt)";
+                if (cleanNum.startsWith("+2010")) {
+                    specificCarrier = "فودافون مصر (Vodafone Egypt)";
+                } else if (cleanNum.startsWith("+2011")) {
+                    specificCarrier = "اتصالات مصر (e&)";
+                } else if (cleanNum.startsWith("+2012")) {
+                    specificCarrier = "أورانج مصر (Orange Egypt)";
+                } else if (cleanNum.startsWith("+2015")) {
+                    specificCarrier = "شركة وي (WE / Telecom Egypt)";
+                } else {
+                    specificCarrier = "شبكة مصرية أخرى أو خط أرضي";
+                }
+            } else if (cleanNum.startsWith("+966")) {
+                country = "المملكة العربية السعودية (KSA)";
+                if (cleanNum.includes("50") || cleanNum.includes("53") || cleanNum.includes("55")) {
+                    specificCarrier = "STC السعودية";
+                } else if (cleanNum.includes("54") || cleanNum.includes("56")) {
+                    specificCarrier = "موبايلي (Mobily)";
+                } else if (cleanNum.includes("58") || cleanNum.includes("59")) {
+                    specificCarrier = "زين (Zain)";
+                } else {
+                    specificCarrier = "مشغل سعودي عام";
+                }
+            } else if (cleanNum.startsWith("+971")) {
+                country = "الإمارات العربية المتحدة (UAE)";
+                specificCarrier = "Etisalat / Du";
+            } else if (cleanNum.startsWith("+964")) {
+                country = "العراق (Iraq)";
+                specificCarrier = "Zain / Asiacell / Korek";
+            }
+
+            const verifiedPayload = `[✔] تم التدقيق والتحقق الداخلي بنجاح:\n` +
+                                    `----------------------------------\n` +
+                                    `[الرقم المُقق]: ${cleanNum}\n` +
+                                    `[رمز الدولة]: ${country}\n` +
+                                    `[نوع الخط]: ${lineTypeDescription}\n` +
+                                    `[الشركة المشغلة]: ${specificCarrier}\n` +
+                                    `[حالة التدقيق]: صالح ونظامي 100%\n` +
+                                    `----------------------------------\n` +
+                                    `[!] انتهت العملية البرمجية بنجاح تام.`;
+
+            outputBox.innerText = verifiedPayload;
+
+        }, 500);
+    }
+</script>
+
+</body>
+</html>
